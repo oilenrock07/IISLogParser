@@ -21,8 +21,7 @@ namespace IISLogParser
                 WhiteSpaceChars = new[] { '•' },
                 BadDataFound = null,
                 Delimiter = " ",
-                MissingFieldFound = null,
-                
+                MissingFieldFound = null
             };
 
             using var reader = new StreamReader(FileBox.Text);
@@ -33,24 +32,34 @@ namespace IISLogParser
             for (var i = 0; i < 4; i++)
                 csv.Read();
 
-            _logs = csv.GetRecords<IISLog>().ToList();
+            var data = csv.GetRecords<IISLog>();
+            if (ChkServerFocus.Checked)
+            {
+                data = data.Where(x => !x.ClientUriStem.EndsWith(".js") &&
+                                       !x.ClientUriStem.EndsWith(".css") &&
+                                       !x.ClientUriStem.EndsWith(".png") &&
+                                       !x.ClientUriStem.EndsWith(".jpg") &&
+                                       !x.ClientUriStem.EndsWith(".gif") &&
+                                       !x.ClientUriStem.EndsWith(".woff2") &&
+                                       !x.ClientUriStem.EndsWith(".woff") &&
+                                       !x.ClientUriStem.EndsWith(".ico"));
+            }
+
+            _logs = data.ToList();
         }
 
         private void SearchBox_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar != (char)Keys.Enter) return;
-
-            var searchResult = _logs.Where(x => x.ClientUriQuery.Contains(SearchBox.Text) ||
-                                                x.ClientUriStem.Contains(SearchBox.Text) ||
-                                                x.ClientReferer.Contains(SearchBox.Text) ||
-                                                x.ClientUserName.Contains(SearchBox.Text)).ToList();
-
-            MainGrid.DataSource = searchResult;
+            Search();
         }
 
         private void FileBox_KeyPress(object sender, KeyPressEventArgs e)
         {
-            LoadButton_Click(sender, e);
+            if (e.KeyChar != (char)Keys.Enter) return;
+
+            LoadCsv();
+            MainGrid.DataSource = _logs;
         }
 
         private void FileBox_DragDrop(object sender, DragEventArgs e)
@@ -71,17 +80,35 @@ namespace IISLogParser
                 e.Effect = DragDropEffects.None;
         }
 
-        private void LoadButton_Click(object sender, EventArgs e)
-        {
-            LoadCsv();
-            MainGrid.DataSource = _logs;
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
-            MainGrid.AutoGenerateColumns = true;
+            MainGrid.AutoGenerateColumns = false;
             MainGrid.DataSource = _logs;
             FileBox.Focus();
+        }
+
+        private void Search()
+        {
+            var searchResult = _logs.Where(x => x.ClientUriQuery.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
+                                                x.ClientUriStem.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
+                                                x.ClientReferer.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
+                                                x.ClientUserName.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase));
+            if (ChkTimeStart.Checked)
+                searchResult = searchResult.Where(x => x.Time.ToTimeSpan() >= TimeStart.Value.TimeOfDay);
+            if (ChkTimeEnd.Checked)
+                searchResult = searchResult.Where(x => x.Time.ToTimeSpan() <= TimeEnd.Value.TimeOfDay);
+
+            MainGrid.DataSource = searchResult.ToList();
+        }
+
+        private void BtnApplyTimeFilter_Click_1(object sender, EventArgs e)
+        {
+            Search();
+        }
+
+        private void MenuBar_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
