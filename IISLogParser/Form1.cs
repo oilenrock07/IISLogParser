@@ -42,6 +42,7 @@ namespace IISLogParser
                                        !x.ClientUriStem.EndsWith(".gif") &&
                                        !x.ClientUriStem.EndsWith(".woff2") &&
                                        !x.ClientUriStem.EndsWith(".woff") &&
+                                       !x.ClientUriStem.EndsWith(".svg") &&
                                        !x.ClientUriStem.EndsWith(".ico"));
             }
 
@@ -92,7 +93,8 @@ namespace IISLogParser
             var searchResult = _logs.Where(x => x.ClientUriQuery.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
                                                 x.ClientUriStem.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
                                                 x.ClientReferer.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) ||
-                                                x.ClientUserName.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase));
+                                                x.ClientUserName.Contains(SearchBox.Text, StringComparison.OrdinalIgnoreCase) || 
+                                                x.ClientIp == SearchBox.Text);
             if (ChkTimeStart.Checked)
                 searchResult = searchResult.Where(x => x.Time.ToTimeSpan() >= TimeStart.Value.TimeOfDay);
             if (ChkTimeEnd.Checked)
